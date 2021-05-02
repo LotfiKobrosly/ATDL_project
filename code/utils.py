@@ -24,7 +24,7 @@ def score_function(engine):
     """
     Score function for training. Can be modified.
     """
-    val_loss = engine.state.metrics['accuracy']
+    val_loss = engine.state.metrics['nll']
     return -val_loss
 
 
@@ -37,7 +37,7 @@ def train_model(model,
     Train function for models used in nets.py. Used to monitor and apply
     early stopping.
     """
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()
     if optimizer == "SGD":
         optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.6)
     else:
@@ -51,11 +51,11 @@ def train_model(model,
     train_evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=model.device)
     val_evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=model.device)
 
-    @trainer.on(Events.ITERATION_COMPLETED(every=10))
+    @trainer.on(Events.ITERATION_COMPLETED(every=100))
     def log_training_loss(trainer):
         print(f"Epoch[{trainer.state.epoch}] Loss: {trainer.state.output:.2f}")
 
-    trainer.add_event_handler(Events.ITERATION_COMPLETED, log_training_loss)
+    trainer.add_event_handler(Events.ITERATION_COMPLETED(every=100), log_training_loss)
 
     size = len(data)
     lengths = [int(size * 0.75), size - int(size * 0.75)]
@@ -101,11 +101,11 @@ def train_model(model,
         print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
               .format(trainer.state.epoch, accuracy, loss))
 
-    trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
+    # trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
     handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer, min_delta=0)
     # Note: the handler is attached to an *Evaluator* (runs one epoch on validation dataset).
     val_evaluator.add_event_handler(Events.COMPLETED, handler)
 
-    trainer.run(train_loader, max_epochs=1e6)
+    trainer.run(train_loader, max_epochs=1000)
 
     return training_history, validation_history

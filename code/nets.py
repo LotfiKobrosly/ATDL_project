@@ -8,21 +8,53 @@ import torch.nn.functional as F
 import torch.nn.utils.prune as prune
 
 
+def reinit_weights(m):
+    if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
+        m.reset_parameters()
+
+
 class GeneralNet(nn.Module):
 
+    def prune(self, percentage, state_init):
+        """
 
-    def prune(self, percentage):
-        """
-        """
+        def add_masks(model, masks):
+            mask_pruner = prune.CustomFromMask(None)
+            for module_name, module in model.named_modules():
+                key = f"{module_name}.weight_mask"
+                if key in masks:
+                    if isinstance(module, torch.nn.Conv2d):
+                        _mask = masks[key]
+                        mask_pruner.apply(module, 'weight', _mask)
+                    if isinstance(module, torch.nn.Linear):
+                        _mask = masks[key]
+                        mask_pruner.apply(module, 'weight', _mask)
+
+        def merge_masks(model):
+            for n, m in model.named_modules():
+                if not prune.is_pruned(m):
+                    continue
+                if isinstance(m, torch.nn.Conv2d):
+                    prune.remove(m, name='weight')
+                if isinstance(m, torch.nn.Linear):
+                    prune.remove(m, name='weight')"""
         with torch.no_grad():
             for i, layer in enumerate(self.layers[:-1]):
-                self.layers[i] = prune.ln_structured(
-                    layer,
-                    "weight",
-                    amount=percentage,
-                    dim=1,
-                    n=2
-                )
+                if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
+                    self.layers[i] = prune.ln_structured(
+                        layer,
+                        "weight",
+                        amount=percentage,
+                        dim=1,
+                        n=2
+                    )
+                    for name, buf in layer.named_buffers():
+                        if name == "weight_mask":
+                            break
+                    self.layers[i].weight = buf * state_init["layers."+str(i+1)+".weight"]
+                # merge_masks(self)
+                # masks = layer.named_buffers()
+                # add_masks(self, masks)
 
     @abstractmethod
     def forward(self, X):
@@ -33,7 +65,7 @@ class GeneralNet(nn.Module):
         """
         y_pred = self.forward(X)
         _, y_pred = torch.max(y_pred, 1)
-        return (y == y_pred).sum().item() / X.size().tolist()[0]
+        return (y == y_pred).sum().item() / list(X.size())[0]
 
 
 class NeuralNet(GeneralNet):

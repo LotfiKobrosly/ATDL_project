@@ -3,12 +3,12 @@ import json
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
-
+import matplotlib.pyplot as plt
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
 
 from nets import NeuralNet, ConvNet
 from utils import train_model
@@ -24,6 +24,7 @@ NETWORKS = {
 
 NETS_FILES = "../networks/networks.json"
 OPTIMAL_PARAMS_PATH = "../networks/optimal_params.json"
+FIGURES_PATH = "../figures/"
 
 
 def load_model(data_params, choice):
@@ -46,7 +47,6 @@ if __name__ == "__main__":
     # Setting device
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print('Using {} device'.format(device))
-    device = torch.device(device)
 
     # Data choice
     out_message = """
@@ -131,10 +131,16 @@ Which model do you choose?
 
     # Training and monitoring the training
     remaining = 1
+    pruning_level = list()
     early_stopping_iter = list()
     train_acc = list()
     test_acc = list()
-    while remaining > 0.05:
+    state_init = model.state_dict()
+
+    if not os.path.exists(FIGURES_PATH):
+        os.mkdir(FIGURES_PATH)
+    while remaining > 0.1:
+        pruning_level.append(remaining)
         _, validation_history = train_model(
             model,
             train_set,
@@ -143,12 +149,34 @@ Which model do you choose?
         train_acc.append(validation_history["accuracy"])
         early_stopping_iter.append(len(validation_history['accuracy']))
         accur = 0
-        for features, target in enumerate(DataLoader(test_set, shuffle=True)):
+        for batch_index, (features, target) in enumerate(DataLoader(test_set, shuffle=True)):
+            features, target = features.to(device), target.to(device)
             accur += model.evaluate(features, target)
-        test_acc.append(accur / len(test_set))
+        accur /= len(test_set)
+        test_acc.append(accur)
+        print(accur)
 
-        model.prune(pruning_rate)
-        remaining *= pruning_rate
+        model.prune(pruning_rate, state_init)
+        remaining *= (1-pruning_rate)
+
+    print(test_acc)
+
+    # Accuracy
+    fig = plt.figure(figsize=(15,15))
+    plt.plot(pruning_level, test_acc)
+    fig_name = "Accuracy according to remaining weights - " + NETWORK_CHOICE[model_choice - 1]
+    plt.title(fig_name)
+    plt.show()
+    fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
+
+    # Early stopping
+    fig = plt.figure(figsize=(15,15))
+    plt.plot(pruning_level, early_stopping_iter)
+    fig_name = "Early stopping by remaining weights - " + NETWORK_CHOICE[model_choice - 1]
+    plt.title(fig_name)
+    plt.show()
+    fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
+
 
 
 
