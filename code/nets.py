@@ -95,7 +95,7 @@ class ConvNet(GeneralNet):
         self.flatten = nn.Flatten()
         self.dense_layers = []
         print("New dims: ", new_input_w, " and ", new_input_h)
-        dims = [new_input_h*new_input_w] + [256] * n_dense
+        dims = [new_input_h*new_input_w*n_channels] + [256] * n_dense
         for i in range(n_dense):
             self.dense_layers.append(nn.Linear(dims[i], dims[i+1]))
 
