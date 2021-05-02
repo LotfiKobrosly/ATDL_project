@@ -142,7 +142,10 @@ Which model do you choose?
         )
         train_acc.append(validation_history["accuracy"])
         early_stopping_iter.append(len(validation_history['accuracy']))
-        test_acc.append(model.evaluate(test_set))
+        accur = 0
+        for features, target in enumerate(DataLoader(test_set, shuffle=True)):
+            accur += model.evaluate(features, target)
+        test_acc.append(accur / len(test_set))
 
         model.prune(pruning_rate)
         remaining *= pruning_rate

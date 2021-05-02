@@ -50,7 +50,8 @@ class NeuralNet(GeneralNet):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.dims = [input_dim] + n_hidden_units + [output_dim]
-        self.layers = nn.ModuleList([nn.Linear(self.dims[i], self.dims[i+1]) for i in range(n_hidden_layers + 1)])
+        self.layers = nn.ModuleList([nn.Flatten()])
+        self.layers.extend([nn.Linear(self.dims[i], self.dims[i+1]) for i in range(n_hidden_layers + 1)])
         self.fc = fc
         self.device = "cpu" # Default
 

@@ -58,10 +58,6 @@ def train_model(model,
     trainer.add_event_handler(Events.ITERATION_COMPLETED, log_training_loss)
 
     size = len(data)
-    if not hasattr(model, 'conv_layers'):
-        tsfm = transforms.Resize((1, model.input_dim,))
-        data.transform = transforms.Compose([data.transform, tsfm])
-    #print(data[5])
     lengths = [int(size * 0.75), size - int(size * 0.75)]
     trainset, valset = random_split(data,
                                     lengths=lengths,
