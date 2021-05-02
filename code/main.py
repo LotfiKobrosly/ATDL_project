@@ -18,8 +18,8 @@ NETWORKS = {
     "Convolutional_6": ConvNet
 }
 
-NETS_FILES = "networks/networks.json"
-OPTIMAL_PARAMS_PATH = "networks/optimal_params.json"
+NETS_FILES = "../networks/networks.json"
+OPTIMAL_PARAMS_PATH = "../networks/optimal_params.json"
 
 
 def load_model(data_params, choice):
@@ -59,14 +59,14 @@ Which dataset to test on?
             data_choice = "p"
 
     if data_choice == 1:
-        train_set = datasets.MNIST(root='./data',
+        train_set = datasets.MNIST(root='../data',
                                    train=True,
                                    download=True,
                                    transform=transforms.Compose([
                                        transforms.ToTensor(),
                                        transforms.Normalize((0.1307,), (0.3081,))
                                    ]))
-        test_set = datasets.MNIST(root='./data',
+        test_set = datasets.MNIST(root='../data',
                                   train=False,
                                   download=True,
                                   transform=transforms.Compose([
@@ -78,11 +78,11 @@ Which dataset to test on?
         transform = transforms.Compose(
             [transforms.ToTensor(),
              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        train_set = datasets.CIFAR10(root='./data',
+        train_set = datasets.CIFAR10(root='../data',
                                      train=True,
                                      download=True,
                                      transform=transform)
-        test_set = datasets.CIFAR10(root='./data',
+        test_set = datasets.CIFAR10(root='../data',
                                     train=False,
                                     download=True,
                                     transform=transform)
