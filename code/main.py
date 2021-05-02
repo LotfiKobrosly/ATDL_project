@@ -4,10 +4,12 @@ import json
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
+import torch
+import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
 from nets import NeuralNet, ConvNet
 from utils import train_model
-
-import torch
 
 NETWORK_CHOICE = ["LeNet", "Convolutional_2", "Convolutional_4", "Convolutional_6"]
 
@@ -28,7 +30,7 @@ def load_model(data_params, choice):
     params = nets[NETWORK_CHOICE[choice - 1]]
     for key in data_params.keys():
         params[key] = data_params[key]
-    return NETWORKS[NETWORK_CHOICE[choice - 1](**params)]
+    return NETWORKS[NETWORK_CHOICE[choice - 1]](**params)
 
 
 def get_optima_hyperparams(choice):
@@ -42,6 +44,7 @@ if __name__ == "__main__":
     # Setting device
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     print('Using {} device'.format(device))
+    device = torch.device(device)
 
     # Data choice
     out_message = """
@@ -89,15 +92,20 @@ Which dataset to test on?
         classes = ('plane', 'car', 'bird', 'cat',
                    'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-    data_params = {"input_dim": train_set[0].size().tolist(), "output_dim": len(classes)}
+    train_data = DataLoader(train_set)
+    _, (example, _) = next(enumerate(train_data))
+    data_params = {
+        "input_dim": list(example[0].size()),
+        "output_dim": len(classes),
+        "fc" : F.softmax}
 
     # Defining model and moving to device
     out_message = """
 Which model do you choose?
 1: LeNet
 2: Convolutional 2
-3: Convolution 4
-4: Convolution 6
+3: Convolutional 4
+4: Convolutional 6
     """
     model_choice = "p"
     while not(isinstance(model_choice, int)) or (model_choice not in [1, 2, 3, 4]):
@@ -108,7 +116,10 @@ Which model do you choose?
             model_choice = "p"
 
     if model_choice == 1:
-        data_params["input_dim"] = torch.reshape(train_set[0], (-1,)).size().item()
+        data_params["input_dim"] = list(torch.reshape(example[0], (-1,)).size())[0]
+    else:
+        data_params["n_channels"] = list(example[0].size())[0]
+    print(data_params)
     model = load_model(data_params, model_choice)
     model.set_device(device)
 

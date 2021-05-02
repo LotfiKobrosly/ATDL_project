@@ -7,6 +7,7 @@ from torch import nn, optim
 import torch.nn.functional as F
 import torch.nn.utils.prune as prune
 from torch.utils.data import DataLoader, random_split
+import torchvision.transforms as transforms
 
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
@@ -18,11 +19,12 @@ OPTIMIZERS = {
     "SGD" : optim.SGD
 }
 
+
 def score_function(engine):
     """
     Score function for training. Can be modified.
     """
-    val_loss = engine.state.metrics['nll']
+    val_loss = engine.state.metrics['accuracy']
     return -val_loss
 
 
@@ -35,12 +37,12 @@ def train_model(model,
     Train function for models used in nets.py. Used to monitor and apply
     early stopping.
     """
-    criterion = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss()
     if optimizer == "SGD":
         optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.6)
     else:
         optimizer = OPTIMIZERS[optimizer](model.parameters(), lr=lr)
-    trainer = create_supervised_trainer(model, optimizer, criterion)
+    trainer = create_supervised_trainer(model, optimizer, criterion, device=model.device)
 
     val_metrics = {
         "accuracy": Accuracy(),
@@ -55,7 +57,11 @@ def train_model(model,
 
     trainer.add_event_handler(Events.ITERATION_COMPLETED, log_training_loss)
 
-    size = data.size().tolist()[0]
+    size = len(data)
+    if not hasattr(model, 'conv_layers'):
+        tsfm = transforms.Resize((1, model.input_dim,))
+        data.transform = transforms.Compose([data.transform, tsfm])
+    #print(data[5])
     lengths = [int(size * 0.75), size - int(size * 0.75)]
     trainset, valset = random_split(data,
                                     lengths=lengths,
