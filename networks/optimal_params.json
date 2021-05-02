@@ -1,0 +1,26 @@
+{
+	"LeNet" : {
+		"batch_size" : 60,
+		"lr" : 1.2e-3,
+		"optimizer" : "Adam",
+		"pruning_rate" : 0.2
+		},
+	"Convolutional_2" : {
+		"batch_size" : 60,
+                "lr" : 2e-4,
+                "optimizer" : "Adam",
+                "pruning_rate" : 0.1
+                },
+        "Convolutional_4" : {
+                "batch_size" : 60,
+                "lr" : 3e-4,
+                "optimizer" : "Adam",
+                "pruning_rate" : 0.10
+                },
+        "Convolutional_6" : {
+                "batch_size" : 60,
+                "lr" : 3e-4,
+                "optimizer" : "Adam",
+                "pruning_rate" : 0.15
+                }
+}

@@ -1,0 +1,19 @@
+{
+	"LeNet" : {
+		"n_hidden_layers" : 2,
+		"n_hidden_units" : [300, 100]
+		},
+	"Convolutional_2" : {
+		"n_conv_steps" : 2,
+		"n_dense" : 2
+		},
+	"Convolutional_4" : {
+                "n_conv_steps" : 4,
+                "n_dense" : 2
+                },
+	"Convolutional_6" : {
+                "n_conv_steps" : 6,
+                "n_dense" : 2
+                }
+}
+

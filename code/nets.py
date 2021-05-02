@@ -1,76 +1,119 @@
 import os
 
-import numpy as np
-import pandas as pd
+from abc import abstractmethod
 
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
-
-class NeuralNet(nn.Module):
-    """
-    """
-
-    def __init__(self,
-        dim_input,
-        dim_output,
-        n_hidden_layers,
-        n_hidden_units,
-        loss):
-        super().__init__()
-        #self.input = nn.Input(dim_input)
-        self.dims = [dim_input] + n_hidden_units + [dim_output]
-        self.layers = [nn.Linear(self.dims[i], self.dims[i+1]) for i in range(n_hidden_layers+1)]
+import torch.nn.utils.prune as prune
 
 
+class GeneralNet(nn.Module):
+
+    def __init__(self):
+        super(nn.Module).__init__()
+        self.layers=list()
+
+    def prune(self, percentage):
+        """
+        """
+        with torch.no_grad():
+            for i, layer in enumerate(self.layers[:-1]):
+                self.layers[i] = prune.ln_structured(
+                    layer,
+                    "weight",
+                    amount=percentage,
+                    dim=1,
+                    n=2
+                )
+
+    @abstractmethod
     def forward(self, X):
-        """
-        """
-        for i, layer in enumerate(self.layers[:-1]):
-            X = F.relu(layer(X))
-        return F.softmax(X)
-
-    def train(self, X, y, batch_size, lr):
-        """
-        """
-        pass
-
-    def predict(self, X):
-        """
-        """
         pass
 
     def evaluate(self, X, y):
         """
         """
-        y_pred = self.predict(X)
-        return self.loss(y, y_pred)
+        y_pred = self.forward(X)
+        _, y_pred = torch.max(y_pred, 1)
+        return (y == y_pred).sum().item() / X.size().tolist()[0]
 
 
-    def prune(self, percentage):
+class NeuralNet(GeneralNet):
+    """
+    """
+
+    def __init__(self,
+                 input_dim=100,
+                 output_dim=200,
+                 n_hidden_layers=100,
+                 n_hidden_units=[],
+                 fc=None):
+        super(NeuralNet, self).__init__()
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.dims = [input_dim] + n_hidden_units + [output_dim]
+        self.layers = [nn.Linear(self.dims[i], self.dims[i+1]) for i in range(n_hidden_layers+1)]
+        self.fc = fc
+        self.device = "cpu" # Default
+
+    def set_device(self, device):
+        self.device = device
+        self.to(self.device)
+
+    def forward(self, x):
         """
         """
-        pass
+        for i, layer in enumerate(self.layers[:-1]):
+            x = F.relu(layer(x))
+        return self.fc(x)
 
-    def evaluate_performance(self,
-        X_train,
-        y_train,
-        X_test,
-        y_test,
-        n_epochs,
-        batch_size,
-        lr):
+
+class ConvNet(GeneralNet):
+    """
+    """
+
+    def __init__(self,
+                 input_dim=1,
+                 output_dim=1,
+                 n_conv_steps=1,
+                 n_dense=1,
+                 fc=None):
+        super(ConvNet, self).__init__()
+        self.conv_layers = list()
+        new_input_h, new_input_w = input_dim[0], input_dim[1]
+        for _ in range(n_conv_steps):
+            self.conv_layers.extend([
+                nn.Conv2D(in_channels=1,
+                          out_channels=1,
+                          kernel_size=(3, 3)),
+                nn.Conv2D(in_channels=1,
+                          out_channels=1,
+                          kernel_size=(3, 3)),
+                nn.MaxPool2d(kernel_size=(2, 2))
+            ])
+            new_input_w = (new_input_w - 8) // 2
+            new_input_h = (new_input_h - 8) // 2
+        self.flatten = nn.Flatten()
+        self.dense_layers = []
+        dims = [new_input_h] + [256] * n_dense
+        for i in range(n_dense):
+            self.dense_layers.append(nn.Linear(dims[i], dims[i+1]))
+
+        self.out = nn.Linear(256, output_dim)
+        self.fc = fc
+        self.device = "cpu"
+
+    def set_device(self, device):
+        self.device = device
+        self.to(self.device)
+
+    def forward(self, x):
         """
         """
-
-        # Initializing performance measures
-        train_accuracy = list()
-        test_accuracy = list()
-        for i in range(n_epochs):
-            train_accuracy.append(self.train(
-                X_train,
-                y_train,
-                batch_size=batch_size,
-                lr=lr)
-            test_accuracy.append(self.evaluate(X_test, y_test))
-
+        for layer in self.conv_layers:
+            x = layer(x)
+        for layer in self.dense_layers:
+            x = F.relu(layer(x))
+        return self.fc(self.out(x))
+        return self.fc(self.out(x))
