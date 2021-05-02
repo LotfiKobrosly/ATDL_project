@@ -102,10 +102,10 @@ def train_model(model,
               .format(trainer.state.epoch, accuracy, loss))
 
     # trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
-    handler = EarlyStopping(patience=10, score_function=score_function, trainer=trainer, min_delta=0)
+    handler = EarlyStopping(patience=100, score_function=score_function, trainer=trainer, min_delta=0)
     # Note: the handler is attached to an *Evaluator* (runs one epoch on validation dataset).
     val_evaluator.add_event_handler(Events.COMPLETED, handler)
 
-    trainer.run(train_loader, max_epochs=1000)
+    trainer.run(train_loader, max_epochs=100000)
 
     return training_history, validation_history

@@ -176,9 +176,3 @@ Which model do you choose?
     plt.title(fig_name)
     plt.show()
     fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
-
-
-
-
-
-

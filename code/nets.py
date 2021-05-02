@@ -39,22 +39,21 @@ class GeneralNet(nn.Module):
                 if isinstance(m, torch.nn.Linear):
                     prune.remove(m, name='weight')"""
         with torch.no_grad():
-            for i, layer in enumerate(self.layers[:-1]):
+            for i, layer in enumerate(self.layers):
                 if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
                     self.layers[i] = prune.ln_structured(
                         layer,
                         "weight",
                         amount=percentage,
-                        dim=1,
+                        dim=0,
                         n=2
                     )
                     for name, buf in layer.named_buffers():
                         if name == "weight_mask":
                             break
-                    self.layers[i].weight = buf * state_init["layers."+str(i+1)+".weight"]
-                # merge_masks(self)
-                # masks = layer.named_buffers()
-                # add_masks(self, masks)
+                    print(buf)
+                    self.layers[i].weight = buf * state_init["layers."+str(i)+".weight"]
+                    print(self.layers[i].weight)
 
     @abstractmethod
     def forward(self, X):
