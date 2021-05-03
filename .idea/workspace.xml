@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f90041e5-29d1-464b-a484-439aedda22da" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/nets.py" beforeDir="false" afterPath="$PROJECT_DIR$/code/nets.py" afterDir="false" />
@@ -39,6 +40,7 @@
       <updated>1619938510342</updated>
       <workItem from="1619938513696" duration="169000" />
       <workItem from="1619938755980" duration="14494000" />
+      <workItem from="1620041038504" duration="3530000" />
     </task>
     <servers />
   </component>

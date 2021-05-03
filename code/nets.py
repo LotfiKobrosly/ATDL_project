@@ -52,8 +52,9 @@ class GeneralNet(nn.Module):
                         if name == "weight_mask":
                             break
                     print(buf)
-                    self.layers[i].weight = buf * state_init["layers."+str(i)+".weight"]
-                    print(self.layers[i].weight)
+                    self.layers[i].weight = state_init["layers."+str(i)+".weight"]
+                    mask_pruner = prune.CustomFromMask(None)
+                    mask_pruner.apply(self.layers[i], "weight", buf)
 
     @abstractmethod
     def forward(self, X):
