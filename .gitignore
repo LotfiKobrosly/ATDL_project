@@ -1,2 +1,4 @@
 /venv*
 /data*
+/code/__pyc*
+/.ide*
