@@ -135,7 +135,9 @@ Which model do you choose?
     early_stopping_iter = list()
     train_acc = list()
     test_acc = list()
-    state_init = model.state_dict().copy()
+    state_init = dict()
+    for key in model.state_dict().keys():
+        state_init[key] = model.state_dict()[key].clone()
 
     if not os.path.exists(FIGURES_PATH):
         os.mkdir(FIGURES_PATH)
@@ -155,19 +157,16 @@ Which model do you choose?
         accur /= len(test_set)
         test_acc.append(accur)
         print(accur)
-        new_state = model.state_dict().copy()
-        for key in state_init.keys():
-            print(state_init[key] == new_state[key], "\n\n\n")
 
         model.prune(pruning_rate, state_init)
         remaining *= (1-pruning_rate)
-        for key in state_init.keys():
-            if "weight" in key:
-                w = model.state_dict().get(key + "_orig", None)
-                if w is None:
-                    print("We have None")
-                else:
-                    print("For ", key, ": ", state_init[key] == w)
+        """
+        for i, (name, param) in enumerate(model.named_parameters()):
+            for j, key in enumerate(state_init.keys()):
+                if ("weight_orig" in name) and ("weight" in key):
+                    if name[7] == key[7]:
+                        print(name, " - ", key, ": ")
+                        print(param.data - state_init[key])"""
 
     print(test_acc)
 

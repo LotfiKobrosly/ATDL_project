@@ -106,6 +106,6 @@ def train_model(model,
     # Note: the handler is attached to an *Evaluator* (runs one epoch on validation dataset).
     val_evaluator.add_event_handler(Events.COMPLETED, handler)
 
-    trainer.run(train_loader, max_epochs=2)
+    trainer.run(train_loader, max_epochs=3)
 
     return training_history, validation_history

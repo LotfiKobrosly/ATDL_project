@@ -16,28 +16,7 @@ def reinit_weights(m):
 class GeneralNet(nn.Module):
 
     def prune(self, percentage, state_init):
-        """
 
-        def add_masks(model, masks):
-            mask_pruner = prune.CustomFromMask(None)
-            for module_name, module in model.named_modules():
-                key = f"{module_name}.weight_mask"
-                if key in masks:
-                    if isinstance(module, torch.nn.Conv2d):
-                        _mask = masks[key]
-                        mask_pruner.apply(module, 'weight', _mask)
-                    if isinstance(module, torch.nn.Linear):
-                        _mask = masks[key]
-                        mask_pruner.apply(module, 'weight', _mask)
-
-        def merge_masks(model):
-            for n, m in model.named_modules():
-                if not prune.is_pruned(m):
-                    continue
-                if isinstance(m, torch.nn.Conv2d):
-                    prune.remove(m, name='weight')
-                if isinstance(m, torch.nn.Linear):
-                    prune.remove(m, name='weight')"""
         with torch.no_grad():
             for i, layer in enumerate(self.layers):
                 if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
@@ -48,11 +27,13 @@ class GeneralNet(nn.Module):
                         dim=0,
                         n=2
                     )
+                    if not prune.is_pruned(self.layers[i]):
+                        prune.remove(self.layers[i], name="weight")
                     for name, buf in layer.named_buffers():
                         if name == "weight_mask":
                             break
-                    print(buf)
-                    self.layers[i].weight = state_init["layers."+str(i)+".weight"]
+                    self.layers[i].weight = state_init["layers."+str(i)+".weight"].clone()
+                    self.layers[i].reset_parameters()
                     mask_pruner = prune.CustomFromMask(None)
                     mask_pruner.apply(self.layers[i], "weight", buf)
 
