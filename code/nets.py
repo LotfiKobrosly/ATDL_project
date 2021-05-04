@@ -29,13 +29,13 @@ class GeneralNet(nn.Module):
                     )
                     if not prune.is_pruned(self.layers[i]):
                         prune.remove(self.layers[i], name="weight")
-                    for name, buf in layer.named_buffers():
-                        if name == "weight_mask":
-                            break
-                    self.layers[i].weight = state_init["layers."+str(i)+".weight"].clone()
-                    self.layers[i].reset_parameters()
-                    mask_pruner = prune.CustomFromMask(None)
-                    mask_pruner.apply(self.layers[i], "weight", buf)
+                    buffers = list(self.layers[i].named_buffers())
+                    buf = buffers[0][1]
+                    rank = str(i)
+                    self.layers[i].weight = state_init["layers."+rank+".weight"].clone() * buf
+                    # self.layers[i].reset_parameters()
+                    # mask_pruner = prune.CustomFromMask(None)
+                    # mask_pruner.apply(self.layers[i], "weight", buf)
 
     @abstractmethod
     def forward(self, X):
@@ -55,8 +55,8 @@ class NeuralNet(GeneralNet):
 
     def __init__(self,
                  input_dim=100,
-                 output_dim=200,
-                 n_hidden_layers=100,
+                 output_dim=1,
+                 n_hidden_layers=0,
                  n_hidden_units=[],
                  fc=None):
         super(NeuralNet, self).__init__()

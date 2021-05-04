@@ -141,7 +141,19 @@ Which model do you choose?
 
     if not os.path.exists(FIGURES_PATH):
         os.mkdir(FIGURES_PATH)
+
     while remaining > 0.1:
+        if pruning_level:
+            rank = "p"
+            for i, (name, param) in enumerate(model.named_parameters()):
+                for j, key in enumerate(state_init.keys()):
+                    if ("weight_orig" in name) and ("weight" in key):
+                        if name[7] == key[7]:
+                            rank = name[7]
+                            print(name, " - ", key, ": ", rank)
+                            buffers = list(model.named_buffers())
+                            mask = buffers[int(rank)-1][1]
+                            computed = (param.data - state_init[key]) * mask
         pruning_level.append(remaining)
         _, validation_history = train_model(
             model,
