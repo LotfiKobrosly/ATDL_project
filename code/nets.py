@@ -2,40 +2,42 @@ import os
 
 from abc import abstractmethod
 
+import numpy as np
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
 import torch.nn.utils.prune as prune
 
 
-def reinit_weights(m):
-    if isinstance(m, nn.Conv2d) or isinstance(m, nn.Linear):
-        m.reset_parameters()
-
-
 class GeneralNet(nn.Module):
 
-    def prune(self, percentage, state_init):
+    def __init__(self):
+        super(GeneralNet, self).__init__()
 
-        with torch.no_grad():
-            for i, layer in enumerate(self.layers):
-                if isinstance(layer, nn.Linear) or isinstance(layer, nn.Conv2d):
-                    self.layers[i] = prune.ln_structured(
-                        layer,
-                        "weight",
-                        amount=percentage,
-                        dim=0,
-                        n=2
-                    )
-                    if not prune.is_pruned(self.layers[i]):
-                        prune.remove(self.layers[i], name="weight")
-                    buffers = list(self.layers[i].named_buffers())
-                    buf = buffers[0][1]
-                    rank = str(i)
-                    self.layers[i].weight = state_init["layers."+rank+".weight"].clone() * buf
-                    # self.layers[i].reset_parameters()
-                    # mask_pruner = prune.CustomFromMask(None)
-                    # mask_pruner.apply(self.layers[i], "weight", buf)
+    def prune(self, percentage, state_init):
+        for i, (name, module) in enumerate(self.named_modules()):
+            if isinstance(module, nn.Conv2d) or isinstance(module, nn.Linear):
+                prune.ln_structured(
+                    module,
+                    "weight",
+                    amount=percentage,
+                    dim=0,
+                    n=2
+                )
+                buffers = list(module.named_buffers())
+                buf = buffers[0][1]
+                if not prune.is_pruned(module):
+                    prune.remove(module, name="weight")
+
+                mask_pruner = prune.CustomFromMask(None)
+                mask_pruner.apply(module, "weight", buf)
+                new_name = name + ".weight"
+                new_weight = buf * state_init[new_name]
+                print(torch.sum((module.weight - state_init[new_name]) * buf))
+                module.weight = new_weight.clone()
+                print(name, " after reassigning: ")
+                print(torch.sum((module.weight - state_init[new_name]) * buf))
+
 
     @abstractmethod
     def forward(self, X):
@@ -108,7 +110,6 @@ class ConvNet(GeneralNet):
             new_input_h = (new_input_h - 4) // 2
         self.flatten = nn.Flatten()
         self.dense_layers = []
-        print("New dims: ", new_input_w, " and ", new_input_h)
         dims = [new_input_h*new_input_w*n_channels] + [256] * n_dense
         for i in range(n_dense):
             self.dense_layers.append(nn.Linear(dims[i], dims[i+1]))

@@ -1,9 +1,16 @@
+import matplotlib.pyplot as plt
+import torch
 import os
 import json
 import ssl
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
+import matplotlib
 import matplotlib.pyplot as plt
+import tkinter
+
+matplotlib.use('TkAgg')
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -36,11 +43,10 @@ def load_model(data_params, choice):
     return NETWORKS[NETWORK_CHOICE[choice - 1]](**params)
 
 
-def get_optima_hyperparams(choice):
+def get_optimal_hyperparams(choice):
     with open(OPTIMAL_PARAMS_PATH, "r") as json_file:
         all_params = json.load(json_file)
     return all_params[NETWORK_CHOICE[model_choice]]
-
 
 
 if __name__ == "__main__":
@@ -99,7 +105,7 @@ Which dataset to test on?
     data_params = {
         "input_dim": list(example[0].size()),
         "output_dim": len(classes),
-        "fc" : F.softmax}
+        "fc": F.softmax}
 
     # Defining model and moving to device
     out_message = """
@@ -108,9 +114,9 @@ Which model do you choose?
 2: Convolutional 2
 3: Convolutional 4
 4: Convolutional 6
-    """
+Answer: """
     model_choice = "p"
-    while not(isinstance(model_choice, int)) or (model_choice not in [1, 2, 3, 4]):
+    while not (isinstance(model_choice, int)) or (model_choice not in [1, 2, 3, 4]):
         model_choice = str(input(out_message))
         try:
             model_choice = int(model_choice)
@@ -126,7 +132,7 @@ Which model do you choose?
     model.set_device(device)
 
     # Get optimal parameters cited in the article
-    optimal_params = get_optima_hyperparams(model_choice)
+    optimal_params = get_optimal_hyperparams(model_choice)
     pruning_rate = optimal_params.pop("pruning_rate")
 
     # Training and monitoring the training
@@ -136,25 +142,15 @@ Which model do you choose?
     train_acc = list()
     test_acc = list()
     state_init = dict()
+    prev_mod = dict()
     for key in model.state_dict().keys():
         state_init[key] = model.state_dict()[key].clone()
 
     if not os.path.exists(FIGURES_PATH):
         os.mkdir(FIGURES_PATH)
 
-    while remaining > 0.1:
-        if pruning_level:
-            rank = "p"
-            for i, (name, param) in enumerate(model.named_parameters()):
-                for j, key in enumerate(state_init.keys()):
-                    if ("weight_orig" in name) and ("weight" in key):
-                        if name[7] == key[7]:
-                            rank = name[7]
-                            print(name, " - ", key, ": ", rank)
-                            buffers = list(model.named_buffers())
-                            mask = buffers[int(rank)-1][1]
-                            computed = (param.data - state_init[key]) * mask
-        pruning_level.append(remaining)
+    while remaining > 0.05:
+
         _, validation_history = train_model(
             model,
             train_set,
@@ -170,30 +166,33 @@ Which model do you choose?
         test_acc.append(accur)
         print(accur)
 
-        model.prune(pruning_rate, state_init)
-        remaining *= (1-pruning_rate)
-        """
-        for i, (name, param) in enumerate(model.named_parameters()):
-            for j, key in enumerate(state_init.keys()):
-                if ("weight_orig" in name) and ("weight" in key):
-                    if name[7] == key[7]:
-                        print(name, " - ", key, ": ")
-                        print(param.data - state_init[key])"""
+        with torch.no_grad():
+            model.prune(pruning_rate, state_init)
+        pruning_level.append(remaining)
+        remaining *= (1 - pruning_rate)
 
     print(test_acc)
 
+    # Changing to percentage
+    pruning_level = [el * 100 for el in pruning_level]
+    test_acc = [el * 100 for el in test_acc]
+
     # Accuracy
-    fig = plt.figure(figsize=(15,15))
+    fig = plt.figure(figsize=(15, 15))
     plt.plot(pruning_level, test_acc)
     fig_name = "Accuracy according to remaining weights - " + NETWORK_CHOICE[model_choice - 1]
     plt.title(fig_name)
+    plt.xlabel("Remaining weights percentage")
+    plt.ylabel("Accuracy in %")
     plt.show()
     fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
 
     # Early stopping
-    fig = plt.figure(figsize=(15,15))
+    fig = plt.figure(figsize=(15, 15))
     plt.plot(pruning_level, early_stopping_iter)
     fig_name = "Early stopping by remaining weights - " + NETWORK_CHOICE[model_choice - 1]
     plt.title(fig_name)
+    plt.xlabel("Remaining weights percentage")
+    plt.ylabel("Iteration")
     plt.show()
     fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
