@@ -61,7 +61,7 @@ if __name__ == "__main__":
 Which dataset to test on?
 1: MNIST
 2: CIFAR10
-    """
+Answer: """
 
     data_choice = "p"
     while not (isinstance(data_choice, int)) or (data_choice not in [1, 2]):
