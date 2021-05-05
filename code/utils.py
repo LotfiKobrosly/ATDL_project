@@ -99,7 +99,7 @@ def train_model(model, data, batch_size=64, lr=0.01, optimizer=None):
 
     # trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
     handler = EarlyStopping(
-        patience=50, score_function=score_function, trainer=trainer, min_delta=0
+        patience=20, score_function=score_function, trainer=trainer, min_delta=0
     )
     # Note: the handler is attached to an *Evaluator* (runs one epoch on validation dataset).
     val_evaluator.add_event_handler(Events.COMPLETED, handler)
