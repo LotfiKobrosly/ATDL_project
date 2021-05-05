@@ -10,7 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import tkinter
 
-matplotlib.use('TkAgg')
+matplotlib.use("TkAgg")
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -26,8 +26,10 @@ NETWORKS = {
     "LeNet": NeuralNet,
     "Convolutional_2": ConvNet,
     "Convolutional_4": ConvNet,
-    "Convolutional_6": ConvNet
+    "Convolutional_6": ConvNet,
 }
+
+DATA_CHOICES = ["MNIST", "CIFAR10"]
 
 NETS_FILES = "../networks/networks.json"
 OPTIMAL_PARAMS_PATH = "../networks/optimal_params.json"
@@ -51,8 +53,8 @@ def get_optimal_hyperparams(choice):
 
 if __name__ == "__main__":
     # Setting device
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print('Using {} device'.format(device))
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Using {} device".format(device))
 
     # Data choice
     out_message = """
@@ -70,42 +72,56 @@ Which dataset to test on?
             data_choice = "p"
 
     if data_choice == 1:
-        train_set = datasets.MNIST(root='../data',
-                                   train=True,
-                                   download=True,
-                                   transform=transforms.Compose([
-                                       transforms.ToTensor(),
-                                       transforms.Normalize((0.1307,), (0.3081,))
-                                   ]))
-        test_set = datasets.MNIST(root='../data',
-                                  train=False,
-                                  download=True,
-                                  transform=transforms.Compose([
-                                      transforms.ToTensor(),
-                                      transforms.Normalize((0.1307,), (0.3081,))
-                                  ]))
+        train_set = datasets.MNIST(
+            root="../data",
+            train=True,
+            download=True,
+            transform=transforms.Compose(
+                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            ),
+        )
+        test_set = datasets.MNIST(
+            root="../data",
+            train=False,
+            download=True,
+            transform=transforms.Compose(
+                [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+            ),
+        )
         classes = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
     else:
         transform = transforms.Compose(
-            [transforms.ToTensor(),
-             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-        train_set = datasets.CIFAR10(root='../data',
-                                     train=True,
-                                     download=True,
-                                     transform=transform)
-        test_set = datasets.CIFAR10(root='../data',
-                                    train=False,
-                                    download=True,
-                                    transform=transform)
-        classes = ('plane', 'car', 'bird', 'cat',
-                   'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
+        train_set = datasets.CIFAR10(
+            root="../data", train=True, download=True, transform=transform
+        )
+        test_set = datasets.CIFAR10(
+            root="../data", train=False, download=True, transform=transform
+        )
+        classes = (
+            "plane",
+            "car",
+            "bird",
+            "cat",
+            "deer",
+            "dog",
+            "frog",
+            "horse",
+            "ship",
+            "truck",
+        )
 
     train_data = DataLoader(train_set)
     _, (example, _) = next(enumerate(train_data))
     data_params = {
         "input_dim": list(example[0].size()),
         "output_dim": len(classes),
-        "fc": F.softmax}
+        "fc": F.softmax,
+    }
 
     # Defining model and moving to device
     out_message = """
@@ -151,15 +167,13 @@ Answer: """
 
     while remaining > 0.05:
 
-        _, validation_history = train_model(
-            model,
-            train_set,
-            **optimal_params
-        )
+        _, validation_history = train_model(model, train_set, **optimal_params)
         train_acc.append(validation_history["accuracy"])
-        early_stopping_iter.append(len(validation_history['accuracy']))
+        early_stopping_iter.append(len(validation_history["accuracy"]))
         accur = 0
-        for batch_index, (features, target) in enumerate(DataLoader(test_set, shuffle=True)):
+        for batch_index, (features, target) in enumerate(
+            DataLoader(test_set, shuffle=True)
+        ):
             features, target = features.to(device), target.to(device)
             accur += model.evaluate(features, target)
         accur /= len(test_set)
@@ -169,7 +183,7 @@ Answer: """
         with torch.no_grad():
             model.prune(pruning_rate, state_init)
         pruning_level.append(remaining)
-        remaining *= (1 - pruning_rate)
+        remaining *= 1 - pruning_rate
 
     print(test_acc)
 
@@ -180,7 +194,12 @@ Answer: """
     # Accuracy
     fig = plt.figure(figsize=(15, 15))
     plt.plot(pruning_level, test_acc)
-    fig_name = "Accuracy according to remaining weights - " + NETWORK_CHOICE[model_choice - 1]
+    fig_name = (
+        "Accuracy according to remaining weights - "
+        + NETWORK_CHOICE[model_choice - 1]
+        + " on "
+        + DATA_CHOICES[data_choice]
+    )
     plt.title(fig_name)
     plt.xlabel("Remaining weights percentage")
     plt.ylabel("Accuracy in %")
@@ -190,7 +209,12 @@ Answer: """
     # Early stopping
     fig = plt.figure(figsize=(15, 15))
     plt.plot(pruning_level, early_stopping_iter)
-    fig_name = "Early stopping by remaining weights - " + NETWORK_CHOICE[model_choice - 1]
+    fig_name = (
+        "Early stopping by remaining weights - "
+        + NETWORK_CHOICE[model_choice - 1]
+        + " on "
+        + DATA_CHOICES[data_choice]
+    )
     plt.title(fig_name)
     plt.xlabel("Remaining weights percentage")
     plt.ylabel("Iteration")

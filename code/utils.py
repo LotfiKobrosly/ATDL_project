@@ -14,25 +14,18 @@ from ignite.metrics import Accuracy, Loss
 from ignite.handlers import EarlyStopping
 
 
-OPTIMIZERS = {
-    "Adam" : optim.Adam,
-    "SGD" : optim.SGD
-}
+OPTIMIZERS = {"Adam": optim.Adam, "SGD": optim.SGD}
 
 
 def score_function(engine):
     """
     Score function for training. Can be modified.
     """
-    val_loss = engine.state.metrics['nll']
+    val_loss = engine.state.metrics["nll"]
     return -val_loss
 
 
-def train_model(model,
-                data,
-                batch_size=64,
-                lr=0.01,
-                optimizer=None):
+def train_model(model, data, batch_size=64, lr=0.01, optimizer=None):
     """
     Train function for models used in nets.py. Used to monitor and apply
     early stopping.
@@ -43,14 +36,17 @@ def train_model(model,
     else:
         optimizer = OPTIMIZERS[optimizer](model.parameters(), lr=lr)
     optimizer.zero_grad()
-    trainer = create_supervised_trainer(model, optimizer, criterion, device=model.device)
+    trainer = create_supervised_trainer(
+        model, optimizer, criterion, device=model.device
+    )
 
-    val_metrics = {
-        "accuracy": Accuracy(),
-        "nll": Loss(criterion)
-    }
-    train_evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=model.device)
-    val_evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=model.device)
+    val_metrics = {"accuracy": Accuracy(), "nll": Loss(criterion)}
+    train_evaluator = create_supervised_evaluator(
+        model, metrics=val_metrics, device=model.device
+    )
+    val_evaluator = create_supervised_evaluator(
+        model, metrics=val_metrics, device=model.device
+    )
 
     @trainer.on(Events.ITERATION_COMPLETED(every=100))
     def log_training_loss(trainer):
@@ -60,50 +56,51 @@ def train_model(model,
 
     size = len(data)
     lengths = [int(size * 0.75), size - int(size * 0.75)]
-    trainset, valset = random_split(data,
-                                    lengths=lengths,
-                                    generator=torch.Generator().manual_seed(42)
-                                    )
-    train_loader = DataLoader(trainset,
-                              batch_size=batch_size,
-                              shuffle=True,
-                              num_workers=4
-                              )
-    val_loader = DataLoader(valset,
-                            batch_size=batch_size,
-                            shuffle=True,
-                            num_workers=4
-                            )
+    trainset, valset = random_split(
+        data, lengths=lengths, generator=torch.Generator().manual_seed(42)
+    )
+    train_loader = DataLoader(
+        trainset, batch_size=batch_size, shuffle=True, num_workers=4
+    )
+    val_loader = DataLoader(valset, batch_size=batch_size, shuffle=True, num_workers=4)
 
-    training_history = {'accuracy': [], 'loss': []}
-    validation_history = {'accuracy': [], 'loss': []}
+    training_history = {"accuracy": [], "loss": []}
+    validation_history = {"accuracy": [], "loss": []}
     last_epoch = []
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_training_results(trainer):
         train_evaluator.run(train_loader)
         metrics = train_evaluator.state.metrics
-        accuracy = metrics['accuracy'] * 100
-        loss = metrics['nll']
+        accuracy = metrics["accuracy"] * 100
+        loss = metrics["nll"]
         last_epoch.append(0)
-        training_history['accuracy'].append(accuracy)
-        training_history['loss'].append(loss)
-        print("Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
-              .format(trainer.state.epoch, accuracy, loss))
+        training_history["accuracy"].append(accuracy)
+        training_history["loss"].append(loss)
+        print(
+            "Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
+                trainer.state.epoch, accuracy, loss
+            )
+        )
 
     @trainer.on(Events.EPOCH_COMPLETED)
     def log_validation_results(trainer):
         val_evaluator.run(val_loader)
         metrics = val_evaluator.state.metrics
-        accuracy = metrics['accuracy'] * 100
-        loss = metrics['nll']
-        validation_history['accuracy'].append(accuracy)
-        validation_history['loss'].append(loss)
-        print("Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}"
-              .format(trainer.state.epoch, accuracy, loss))
+        accuracy = metrics["accuracy"] * 100
+        loss = metrics["nll"]
+        validation_history["accuracy"].append(accuracy)
+        validation_history["loss"].append(loss)
+        print(
+            "Validation Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
+                trainer.state.epoch, accuracy, loss
+            )
+        )
 
     # trainer.add_event_handler(Events.EPOCH_COMPLETED, log_validation_results)
-    handler = EarlyStopping(patience=50, score_function=score_function, trainer=trainer, min_delta=0)
+    handler = EarlyStopping(
+        patience=50, score_function=score_function, trainer=trainer, min_delta=0
+    )
     # Note: the handler is attached to an *Evaluator* (runs one epoch on validation dataset).
     val_evaluator.add_event_handler(Events.COMPLETED, handler)
 
