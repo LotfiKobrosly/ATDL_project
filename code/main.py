@@ -224,7 +224,7 @@ Answer: """
     plt.ylabel("Accuracy in %")
     plt.xscale("log")
     plt.legend(loc="best")
-    plt.show()
+    # plt.show()
     fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
 
     # Early stopping
@@ -243,5 +243,5 @@ Answer: """
     plt.ylabel("Iteration")
     plt.xscale("log")
     plt.legend(loc="best")
-    plt.show()
+    # plt.show()
     fig.savefig(os.path.join(FIGURES_PATH, fig_name + ".jpeg"))
