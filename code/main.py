@@ -210,9 +210,9 @@ Answer: """
 
     # Accuracy
     fig = plt.figure(figsize=(15, 15))
-    plt.plot(pruning_level, np.mean(test_acc_list, axis=1), label="Mean")
-    plt.plot(pruning_level, np.max(test_acc_list, axis=1), "--", label="Max")
-    plt.plot(pruning_level, np.min(test_acc_list, axis=1), "--", label="Min")
+    plt.plot(pruning_level, np.mean(test_acc_list, axis=0), label="Mean")
+    plt.plot(pruning_level, np.max(test_acc_list, axis=0), "--", label="Max")
+    plt.plot(pruning_level, np.min(test_acc_list, axis=0), "--", label="Min")
     fig_name = (
         "Accuracy according to remaining weights - "
         + NETWORK_CHOICE[model_choice - 1]
@@ -229,9 +229,9 @@ Answer: """
 
     # Early stopping
     fig = plt.figure(figsize=(15, 15))
-    plt.plot(pruning_level, np.mean(early_stopping_iter_list), label="Mean")
-    plt.plot(pruning_level, np.max(early_stopping_iter_list), "--", label="Max")
-    plt.plot(pruning_level, np.min(early_stopping_iter_list), "--", label="Min")
+    plt.plot(pruning_level, np.mean(early_stopping_iter_list, axis=0), label="Mean")
+    plt.plot(pruning_level, np.max(early_stopping_iter_list, axis=0), "--", label="Max")
+    plt.plot(pruning_level, np.min(early_stopping_iter_list, axis=0), "--", label="Min")
     fig_name = (
         "Early stopping by remaining weights - "
         + NETWORK_CHOICE[model_choice - 1]

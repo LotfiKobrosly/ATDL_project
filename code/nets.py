@@ -26,10 +26,7 @@ class GeneralNet(nn.Module):
                 mask_pruner.apply(module, "weight", buf)
                 new_name = name + ".weight"
                 new_weight = buf * state_init[new_name]
-                print(torch.sum((module.weight - state_init[new_name]) * buf))
                 module.weight = new_weight.clone()
-                print(name, " after reassigning: ")
-                print(torch.sum((module.weight - state_init[new_name]) * buf))
 
     @abstractmethod
     def forward(self, X):
