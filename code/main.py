@@ -4,6 +4,7 @@ import ssl
 
 import tkinter
 import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -19,7 +20,6 @@ from utils import train_model
 
 # Settings
 ssl._create_default_https_context = ssl._create_unverified_context
-matplotlib.use("TkAgg")
 
 # Global variables
 NETWORK_CHOICE = ["LeNet", "Convolutional_2", "Convolutional_4", "Convolutional_6"]
