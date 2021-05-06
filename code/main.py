@@ -4,7 +4,7 @@ import ssl
 
 import tkinter
 import matplotlib
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -65,7 +65,7 @@ Which dataset to test on?
 2: CIFAR10
 Answer: """
 
-    data_choice = "p"
+    data_choice = 2
     while not (isinstance(data_choice, int)) or (data_choice not in [1, 2]):
         data_choice = str(input(out_message))
         try:
@@ -133,7 +133,7 @@ Which model do you choose?
 3: Convolutional 4
 4: Convolutional 6
 Answer: """
-    model_choice = "p"
+    model_choice = 2
     while not (isinstance(model_choice, int)) or (model_choice not in [1, 2, 3, 4]):
         model_choice = str(input(out_message))
         try:
